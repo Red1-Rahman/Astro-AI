@@ -222,8 +222,7 @@ def show_home():
     
     with col2:
         st.markdown("""
-        ### 📚 Built Using Existing Code
-        This platform reuses and integrates functions from:
+        ### 📚This platform reuses and integrates functions from:
         
         - **21cmFAST** simulations (CosmoSim.ipynb)
         - **Galaxy cluster** analysis tools
