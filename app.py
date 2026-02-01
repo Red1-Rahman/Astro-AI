@@ -1078,7 +1078,7 @@ def show_report():
         **Team R3NS** - CAM-SUST 2025
         
         **Team Members:**
-        1. 👨‍💻 **Redwan Rahman** - Project Lead, Backend & Frontend Development
+        1. 👨‍💻 [![Redwan Rahman](https://github.com/Red1-Rahman)](https://github.com/Red1-Rahman) - Project Lead, Backend & Frontend Development
         2. 👩‍🔬 **Nishat Nabilah Ahmed** - Scientific Validation Lead
         3. 👩‍💻 **Nafia Wahid Nirjhor** - Backend Development
         4. 👨‍🔬 **Saidul Hossain Al Amin** - Scientific Validation & Documentation
