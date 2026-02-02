@@ -1079,10 +1079,10 @@ def show_report():
         
         **Team Members:**
         1. 👨‍💻 [Redwan Rahman](https://github.com/Red1-Rahman) - Project Lead, Backend & Frontend Development
-        2. 👩‍🔬 **Nishat Nabilah Ahmed** - Scientific Validation Lead
-        3. 👩‍💻 **Nafia Wahid Nirjhor** - Backend Development
-        4. 👨‍🔬 **Saidul Hossain Al Amin** - Scientific Validation & Documentation
-        5. 👨‍💻 **Ahnaf Rahman Nabil** - Quality Assurance
+        2. 👩‍🔬 [Nishat Nabilah Ahmed](https://github.com/NN-Ahmed) - Scientific Validation Lead
+        3. 👩‍💻 [Nafia Wahid Nirjhor](https://github.com/nafiawahidnirjhor) - Backend Development
+        4. 👨‍🔬 [Saidul Hossain Al Amin](https://github.com/SaidulHossainAlamin) - Scientific Validation & Documentation
+        5. 👨‍💻 [Ahnaf Rahman Nabil](https://github.com/NaBziY) - Quality Assurance
         
         """)
 
