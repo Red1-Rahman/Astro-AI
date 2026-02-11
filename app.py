@@ -883,6 +883,45 @@ def show_report():
     # Initialize AI assistant with OpenRouter/DeepSeek by default
     ai_assistant = OpenAIAssistant(provider="openrouter", model="deepseek/deepseek-r1:free")
     
+    # Show RAG system status
+    rag_status = ai_assistant.get_rag_status()
+    if rag_status['enabled']:
+        with st.expander("🔍 RAG Knowledge Base Status", expanded=False):
+            st.success("✅ Retrieval-Augmented Generation enabled")
+            stats = rag_status['stats']
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Documents", stats.get('total_documents', 0))
+            with col2:
+                st.metric("Vocabulary Size", stats.get('vocabulary_size', 0))
+            with col3:
+                analysis_types = stats.get('analysis_types', [])
+                st.metric("Analysis Types", len(analysis_types))
+            
+            if analysis_types:
+                st.write("**Available Knowledge Areas:**")
+                for atype in analysis_types:
+                    st.write(f"- {atype.replace('_', ' ').title()}")
+                    
+            # Knowledge base query interface
+            st.write("**Query Knowledge Base:**")
+            query = st.text_input("Search for relevant context:")
+            if query:
+                results = ai_assistant.query_knowledge_base(query, top_k=3)
+                if results:
+                    for i, result in enumerate(results, 1):
+                        with st.expander(f"Result {i} (Similarity: {result['similarity']:.3f})"):
+                            st.write(f"**Type:** {result['metadata'].get('analysis_type', 'unknown')}")
+                            st.write(f"**Source:** {result['metadata'].get('source_module', 'unknown')}")
+                            st.write(f"**Content:** {result['content']}")
+                else:
+                    st.info("No relevant documents found.")
+    else:
+        with st.expander("🔍 RAG System Status", expanded=False):
+            st.warning(f"⚠️ RAG system not available: {rag_status['reason']}")
+            st.info("RAG features will be enabled once analysis modules generate results.")
+    
     # Show AI setup guide if in fallback mode
     if ai_assistant.fallback_mode:
         with st.expander("🤖 Enable AI Features - Setup Guide", expanded=True):

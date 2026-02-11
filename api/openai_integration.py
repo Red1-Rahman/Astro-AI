@@ -42,6 +42,12 @@ except Exception:  # pragma: no cover - fallback if old package version
     import openai  # type: ignore
     _NEW_OPENAI_SDK = False
 
+# Import RAG system
+try:
+    from utils.rag_system import get_rag_system
+except ImportError:
+    get_rag_system = None
+
 class OpenAIAssistant:
     """
     AI-powered assistant for astronomical data analysis and scientific reporting.
@@ -69,6 +75,15 @@ class OpenAIAssistant:
         """
         self.provider = provider
         self.use_responses_api = use_responses_api
+        
+        # Initialize RAG system
+        self.rag_system = None
+        if get_rag_system:
+            try:
+                self.rag_system = get_rag_system()
+                st.info("🔍 RAG system enabled for enhanced context retrieval")
+            except Exception as e:
+                st.warning(f"RAG system initialization failed: {e}")
         
         # Auto-detect provider and configure defaults
         self._configure_provider(api_key, model, base_url)
@@ -173,7 +188,7 @@ class OpenAIAssistant:
     def generate_insight(self, data_summary: Dict[str, Any], 
                         analysis_type: str = "general") -> str:
         """
-        Generate AI-powered scientific insights from analysis results.
+        Generate AI-powered scientific insights from analysis results using RAG.
         
         Parameters:
         -----------
@@ -185,17 +200,31 @@ class OpenAIAssistant:
         Returns:
         --------
         str
-            AI-generated scientific insights and interpretation
+            AI-generated scientific insights and interpretation with retrieved context
         """
+        # Store results in RAG knowledge base for future retrieval
+        if self.rag_system:
+            self._store_analysis_results(data_summary, analysis_type)
+        
         # Fallback mode when no API key is available
         if self.fallback_mode:
             return self._generate_fallback_insight(data_summary, analysis_type)
         
         try:
-            # Create analysis-specific prompts
+            # Create query for RAG retrieval
+            query_text = f"{analysis_type} analysis results interpretation"
+            
+            # Retrieve relevant context using RAG
+            rag_context = ""
+            if self.rag_system:
+                rag_context = self.rag_system.generate_context(query_text, top_k=3)
+            
+            # Create analysis-specific prompts with RAG context
             if analysis_type == "cosmic_evolution":
                 context = f"""
-                Analyze these 21cm cosmological simulation results:
+                {rag_context}
+                
+                Now analyze these NEW 21cm cosmological simulation results:
                 {json.dumps(data_summary, indent=2)}
                 
                 Provide scientific interpretation focusing on:
@@ -203,11 +232,15 @@ class OpenAIAssistant:
                 2. Power spectrum implications
                 3. Brightness temperature evolution
                 4. Connection to galaxy formation
+                
+                Use the retrieved context to provide deeper insights and comparisons.
                 """
             
             elif analysis_type == "cluster_analysis":
                 context = f"""
-                Analyze these galaxy cluster environment results:
+                {rag_context}
+                
+                Now analyze these NEW galaxy cluster environment results:
                 {json.dumps(data_summary, indent=2)}
                 
                 Provide scientific interpretation focusing on:
@@ -215,11 +248,15 @@ class OpenAIAssistant:
                 2. Stellar mass assembly differences
                 3. Red fraction evolution
                 4. Comparison with observations
+                
+                Use the retrieved context to provide deeper insights and comparisons.
                 """
             
             elif analysis_type == "jwst_spectroscopy":
                 context = f"""
-                Analyze these JWST spectroscopic results:
+                {rag_context}
+                
+                Now analyze these NEW JWST spectroscopic results:
                 {json.dumps(data_summary, indent=2)}
                 
                 Provide scientific interpretation focusing on:
@@ -227,20 +264,25 @@ class OpenAIAssistant:
                 2. Stellar population properties
                 3. Galaxy formation history
                 4. Comparison with previous surveys
+                
+                Use the retrieved context to provide deeper insights and comparisons.
                 """
             
             else:
                 context = f"""
-                Analyze these astronomical analysis results:
+                {rag_context}
+                
+                Now analyze these NEW astronomical analysis results:
                 {json.dumps(data_summary, indent=2)}
                 
                 Provide general scientific interpretation and key findings.
+                Use the retrieved context to provide deeper insights and comparisons.
                 """
             
-            # Generate response using OpenAI
+            # Generate response using OpenAI with RAG context
             return self._chat(
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": self.system_prompt + "\n\nYou have access to a knowledge base of previous analyses. Use this context to provide more informed interpretations."},
                     {"role": "user", "content": context},
                 ],
                 max_tokens=1500,
@@ -254,9 +296,58 @@ class OpenAIAssistant:
             else:
                 return f"AI analysis temporarily unavailable. Using simulation mode."
     
+    def _store_analysis_results(self, data_summary: Dict[str, Any], analysis_type: str):
+        """Store analysis results in the RAG knowledge base for future retrieval."""
+        if not self.rag_system:
+            return
+        
+        try:
+            # Create interpretation text for the analysis
+            interpretation_parts = []
+            
+            if 'summary' in data_summary:
+                interpretation_parts.append(data_summary['summary'])
+            
+            if 'key_findings' in data_summary:
+                findings = data_summary['key_findings']
+                if isinstance(findings, list):
+                    interpretation_parts.append(f"Key findings: {'; '.join(findings)}")
+                else:
+                    interpretation_parts.append(f"Key findings: {findings}")
+            
+            if 'parameters' in data_summary:
+                params = data_summary['parameters']
+                if isinstance(params, dict):
+                    param_str = ', '.join(f"{k}={v}" for k, v in params.items())
+                    interpretation_parts.append(f"Analysis parameters: {param_str}")
+            
+            interpretation = ' '.join(interpretation_parts) if interpretation_parts else f"Analysis results for {analysis_type}"
+            
+            # Determine source module
+            source_mapping = {
+                'cosmic_evolution': 'cos_evo',
+                'cluster_analysis': 'cluster_analyzer', 
+                'jwst_spectroscopy': 'jwst_analyzer'
+            }
+            source_module = source_mapping.get(analysis_type, 'unknown')
+            
+            # Store in RAG system
+            self.rag_system.add_scientific_result(
+                analysis_type=analysis_type,
+                results=data_summary,
+                interpretation=interpretation,
+                source_module=source_module
+            )
+            
+            # Save the updated knowledge base
+            self.rag_system.save_knowledge_base()
+            
+        except Exception as e:
+            st.warning(f"Failed to store analysis results in RAG system: {e}")
+    
     def generate_comparative_analysis(self, results_summary: Dict[str, Any]) -> str:
         """
-        Generate comparative analysis across multiple modules.
+        Generate comparative analysis across multiple modules using RAG context.
         
         Parameters:
         -----------
@@ -266,7 +357,7 @@ class OpenAIAssistant:
         Returns:
         --------
         str
-            AI-generated comparative analysis
+            AI-generated comparative analysis enhanced with RAG retrieval
         """
         # Fallback mode when no API key is available
         if self.fallback_mode:
@@ -291,9 +382,17 @@ This comprehensive analysis demonstrates the synergy between different astronomi
 *Note: This is a simulation. Enable OpenAI integration for full AI-powered comparative analysis.*
             """
         
+        # Retrieve relevant context using RAG for comparative analysis
+        rag_context = ""
+        if self.rag_system:
+            query_text = "comparative analysis cross-module galaxy evolution cosmic reionization cluster environment JWST"
+            rag_context = self.rag_system.generate_context(query_text, top_k=5)
+        
         try:
             context = f"""
-            Provide a comprehensive comparative analysis across these multi-wavelength 
+            {rag_context}
+            
+            Now provide a comprehensive comparative analysis across these NEW multi-wavelength 
             and multi-epoch astronomical results:
             
             {json.dumps(results_summary, indent=2)}
@@ -306,12 +405,14 @@ This comprehensive analysis demonstrates the synergy between different astronomi
             5. Implications for galaxy formation models
             6. Future observational priorities
             
-            Structure as a scientific synthesis suitable for a research summary.
+            Use the retrieved context to identify patterns, connections, and insights 
+            across different analysis modules. Structure as a scientific synthesis 
+            suitable for a research summary.
             """
             
             return self._chat(
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": self.system_prompt + "\n\nYou have access to a knowledge base of previous analyses. Use this context to provide comprehensive cross-module insights."},
                     {"role": "user", "content": context},
                 ],
                 max_tokens=2000,
@@ -987,3 +1088,45 @@ This integrated approach opens new avenues for understanding galaxy evolution, w
         }
         
         return templates.get(template_name, f"**{template_name}** analysis would be generated here with AI integration enabled.")
+    
+    def get_rag_status(self) -> Dict[str, Any]:
+        """Get status and statistics of the RAG system."""
+        if not self.rag_system:
+            return {
+                'enabled': False,
+                'reason': 'RAG system not available',
+                'stats': {}
+            }
+        
+        try:
+            stats = self.rag_system.get_stats()
+            return {
+                'enabled': True,
+                'reason': 'RAG system operational',
+                'stats': stats
+            }
+        except Exception as e:
+            return {
+                'enabled': False,
+                'reason': f'RAG system error: {str(e)}',
+                'stats': {}
+            }
+    
+    def query_knowledge_base(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
+        """Direct query to the knowledge base for debugging/exploration."""
+        if not self.rag_system:
+            return []
+        
+        try:
+            results = self.rag_system.retrieve(query, top_k)
+            return [
+                {
+                    'content': doc['content'],
+                    'metadata': doc['metadata'],
+                    'similarity': score
+                }
+                for doc, score in results
+            ]
+        except Exception as e:
+            st.warning(f"Knowledge base query failed: {e}")
+            return []
