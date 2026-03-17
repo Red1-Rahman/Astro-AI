@@ -24,7 +24,7 @@
 **Current Fixed Version (Full Scientific):**
 
 ```txt
-libfreetype6-dev
+libfreetype-dev
 libpng-dev
 libhdf5-dev
 libfftw3-dev
@@ -44,7 +44,7 @@ libx11-dev
 **Emergency Reduced Version** (only if production deployment fails):
 
 ```txt
-libfreetype6-dev
+libfreetype-dev
 libpng-dev
 libhdf5-dev
 ```

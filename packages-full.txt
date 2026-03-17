@@ -6,7 +6,7 @@
 # ========================================
 # ESSENTIAL GRAPHICS & DATA
 # ========================================
-libfreetype6-dev
+libfreetype-dev
 libpng-dev
 libhdf5-dev
 

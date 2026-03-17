@@ -1,4 +1,4 @@
-libfreetype6-dev
+libfreetype-dev
 libpng-dev
 libhdf5-dev
 libfftw3-dev

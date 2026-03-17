@@ -7,7 +7,7 @@
 # ESSENTIAL ONLY
 # ========================================
 # Basic graphics support for matplotlib
-libfreetype6-dev
+libfreetype-dev
 libpng-dev
 
 # HDF5 for astronomical data (if h5py is used)
