@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # Serialisation helper (same contract as the one in openai_integration.py)
 # ---------------------------------------------------------------------------
 
+
 def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     """
     Recursively convert *obj* to a JSON-serialisable form.
@@ -51,6 +52,7 @@ def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     # numpy
     try:
         import numpy as _np
+
         if isinstance(obj, _np.ndarray):
             return obj.tolist() if obj.size <= 200 else f"<array shape={obj.shape}>"
         if isinstance(obj, (_np.integer, _np.floating, _np.bool_)):
@@ -81,6 +83,7 @@ def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     # pandas
     try:
         import pandas as _pd
+
         if isinstance(obj, _pd.DataFrame):
             return f"<DataFrame rows={len(obj)} cols={list(obj.columns)}>"
     except ImportError:
@@ -105,14 +108,12 @@ class AstroRAGSystem:
     and scientific explanations.
     """
 
-    def __init__(
-        self, knowledge_base_path: str = "data/astro_knowledge_base.json"
-    ):
+    def __init__(self, knowledge_base_path: str = "data/astro_knowledge_base.json"):
         self.knowledge_base_path = knowledge_base_path
-        self.documents:        List[Dict[str, Any]] = []
-        self.document_vectors: List[np.ndarray]     = []
-        self.vocabulary:       Dict[str, int]        = {}
-        self.idf_scores:       Dict[str, float]      = {}
+        self.documents: List[Dict[str, Any]] = []
+        self.document_vectors: List[np.ndarray] = []
+        self.vocabulary: Dict[str, int] = {}
+        self.idf_scores: Dict[str, float] = {}
 
         self._ensure_data_directory()
         self._load_knowledge_base()
@@ -126,7 +127,7 @@ class AstroRAGSystem:
 
     def _tokenize(self, text: str) -> List[str]:
         """Tokenise scientific text, preserving numeric and technical terms."""
-        tokens = re.findall(r'\b(?:\d+\.?\d*(?:e[+-]?\d+)?|\w+)\b', text.lower())
+        tokens = re.findall(r"\b(?:\d+\.?\d*(?:e[+-]?\d+)?|\w+)\b", text.lower())
         return [t for t in tokens if len(t) > 1]
 
     def _compute_tf_idf(self, documents: List[str]) -> np.ndarray:
@@ -140,7 +141,7 @@ class AstroRAGSystem:
         all_words = set(w for doc in tokenized for w in doc)
         self.vocabulary = {w: i for i, w in enumerate(sorted(all_words))}
         vocab_size = len(self.vocabulary)
-        n_docs     = len(documents)
+        n_docs = len(documents)
 
         # IDF
         word_doc_count: Dict[str, int] = defaultdict(int)
@@ -149,14 +150,13 @@ class AstroRAGSystem:
                 word_doc_count[w] += 1
 
         self.idf_scores = {
-            w: math.log(n_docs / cnt)
-            for w, cnt in word_doc_count.items()
+            w: math.log(n_docs / cnt) for w, cnt in word_doc_count.items()
         }
 
         # TF-IDF matrix
         matrix = np.zeros((n_docs, vocab_size), dtype=np.float32)
         for di, doc_tokens in enumerate(tokenized):
-            tf_counts  = Counter(doc_tokens)
+            tf_counts = Counter(doc_tokens)
             doc_length = max(len(doc_tokens), 1)
             for w, cnt in tf_counts.items():
                 if w in self.vocabulary:
@@ -193,9 +193,9 @@ class AstroRAGSystem:
         """
         safe_meta = _to_serializable(metadata)
         doc = {
-            "content":  str(content),
+            "content": str(content),
             "metadata": safe_meta,
-            "id":       len(self.documents),
+            "id": len(self.documents),
         }
         self.documents.append(doc)
         self._rebuild_vectors()
@@ -223,8 +223,7 @@ class AstroRAGSystem:
                 km = safe_results["key_metrics"]
                 if isinstance(km, dict):
                     content_parts.append(
-                        "Key metrics: "
-                        + ", ".join(f"{k}={v}" for k, v in km.items())
+                        "Key metrics: " + ", ".join(f"{k}={v}" for k, v in km.items())
                     )
             if "method" in safe_results:
                 content_parts.append(f"Analysis method: {safe_results['method']}")
@@ -235,11 +234,11 @@ class AstroRAGSystem:
         timestamp = datetime.now(tz=timezone.utc).isoformat()
 
         metadata = {
-            "type":          "scientific_result",
+            "type": "scientific_result",
             "analysis_type": analysis_type,
             "source_module": source_module,
-            "results":       safe_results,   # already sanitised
-            "timestamp":     timestamp,       # plain ISO string, always serialisable
+            "results": safe_results,  # already sanitised
+            "timestamp": timestamp,  # plain ISO string, always serialisable
         }
 
         # add_document sanitises metadata again as a safety net
@@ -257,10 +256,10 @@ class AstroRAGSystem:
             return []
 
         # Query vector
-        q_tokens  = self._tokenize(query)
-        q_vector  = np.zeros(len(self.vocabulary), dtype=np.float32)
+        q_tokens = self._tokenize(query)
+        q_vector = np.zeros(len(self.vocabulary), dtype=np.float32)
         if q_tokens:
-            q_tf     = Counter(q_tokens)
+            q_tf = Counter(q_tokens)
             q_length = len(q_tokens)
             for w, cnt in q_tf.items():
                 if w in self.vocabulary:
@@ -421,9 +420,9 @@ class AstroRAGSystem:
         objects rather than preventing them from entering the store).
         """
         data = {
-            "documents":   _to_serializable(self.documents),
-            "vocabulary":  self.vocabulary,           # dict[str, int] — always safe
-            "idf_scores":  self.idf_scores,           # dict[str, float] — always safe
+            "documents": _to_serializable(self.documents),
+            "vocabulary": self.vocabulary,  # dict[str, int] — always safe
+            "idf_scores": self.idf_scores,  # dict[str, float] — always safe
         }
 
         try:
@@ -457,9 +456,9 @@ class AstroRAGSystem:
             with open(self.knowledge_base_path, "r") as f:
                 data = json.load(f)
 
-            self.documents   = data.get("documents",   [])
-            self.vocabulary  = data.get("vocabulary",  {})
-            self.idf_scores  = data.get("idf_scores",  {})
+            self.documents = data.get("documents", [])
+            self.vocabulary = data.get("vocabulary", {})
+            self.idf_scores = data.get("idf_scores", {})
 
             vector_path = self.knowledge_base_path.replace(".json", "_vectors.pkl")
             if os.path.exists(vector_path):
@@ -469,12 +468,10 @@ class AstroRAGSystem:
                 self._rebuild_vectors()
 
         except Exception as e:
-            logger.warning(
-                "Could not load knowledge base (%s) — using defaults.", e
-            )
-            self.documents   = []
-            self.vocabulary  = {}
-            self.idf_scores  = {}
+            logger.warning("Could not load knowledge base (%s) — using defaults.", e)
+            self.documents = []
+            self.vocabulary = {}
+            self.idf_scores = {}
             self.document_vectors = []
             self.populate_with_defaults()
 
@@ -492,20 +489,25 @@ class AstroRAGSystem:
         return {
             "total_documents": len(self.documents),
             "vocabulary_size": len(self.vocabulary),
-            "analysis_types":  sorted(set(
-                d["metadata"].get("analysis_type", "unknown")
-                for d in self.documents
-            )),
-            "source_modules":  sorted(set(
-                d["metadata"].get("source_module", "unknown")
-                for d in self.documents
-            )),
+            "analysis_types": sorted(
+                set(
+                    d["metadata"].get("analysis_type", "unknown")
+                    for d in self.documents
+                )
+            ),
+            "source_modules": sorted(
+                set(
+                    d["metadata"].get("source_module", "unknown")
+                    for d in self.documents
+                )
+            ),
         }
 
 
 # ---------------------------------------------------------------------------
 # Streamlit-cached singleton
 # ---------------------------------------------------------------------------
+
 
 @st.cache_resource
 def get_rag_system() -> AstroRAGSystem:

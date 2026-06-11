@@ -9,6 +9,13 @@ from .plotting_utils import PlottingUtils
 # RAG system for AI-enhanced analysis
 try:
     from .rag_system import AstroRAGSystem, get_rag_system
-    __all__ = ['DataHandler', 'CosmologyUtils', 'PlottingUtils', 'AstroRAGSystem', 'get_rag_system']
+
+    __all__ = [
+        "DataHandler",
+        "CosmologyUtils",
+        "PlottingUtils",
+        "AstroRAGSystem",
+        "get_rag_system",
+    ]
 except ImportError:
-    __all__ = ['DataHandler', 'CosmologyUtils', 'PlottingUtils']
+    __all__ = ["DataHandler", "CosmologyUtils", "PlottingUtils"]

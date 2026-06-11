@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 
 OPTIONAL_LIBS: Dict[str, List[str]] = {
     "py21cmfast": ["py21cmfast"],
-    "tools21cm":  ["tools21cm"],
-    "bagpipes":   ["bagpipes"],
+    "tools21cm": ["tools21cm"],
+    "bagpipes": ["bagpipes"],
     "jwst_pipeline": ["jwst"],
-    "astropy":    ["astropy"],
+    "astropy": ["astropy"],
 }
 
 
@@ -46,16 +46,18 @@ OPTIONAL_LIBS: Dict[str, List[str]] = {
 # Data types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CapabilityStatus:
-    name:      str
+    name: str
     available: bool
-    detail:    str
+    detail: str
 
 
 # ---------------------------------------------------------------------------
 # Detection
 # ---------------------------------------------------------------------------
+
 
 def _check_mod(path: str) -> bool:
     """
@@ -80,7 +82,7 @@ def detect_capabilities() -> Dict[str, CapabilityStatus]:
     """Return a dict mapping logical capability names to their status."""
     status: Dict[str, CapabilityStatus] = {}
     for logical_name, modules in OPTIONAL_LIBS.items():
-        ok     = any(_check_mod(m) for m in modules)
+        ok = any(_check_mod(m) for m in modules)
         detail = "present" if ok else "missing"
         status[logical_name] = CapabilityStatus(logical_name, ok, detail)
     return status
@@ -89,6 +91,7 @@ def detect_capabilities() -> Dict[str, CapabilityStatus]:
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
+
 
 def summarize_status(markdown: bool = True) -> str:
     """
@@ -125,6 +128,7 @@ def summarize_status(markdown: bool = True) -> str:
 # Strict-mode guard
 # ---------------------------------------------------------------------------
 
+
 def all_required_or_raise(required: List[str]) -> None:
     """
     Raise RuntimeError if any capability in *required* is unavailable.
@@ -134,9 +138,10 @@ def all_required_or_raise(required: List[str]) -> None:
     required : list of str
         Logical capability names to check (keys in OPTIONAL_LIBS).
     """
-    caps    = detect_capabilities()
+    caps = detect_capabilities()
     missing = [
-        r for r in required
+        r
+        for r in required
         if not caps.get(r, CapabilityStatus(r, False, "unknown")).available
     ]
     if missing:

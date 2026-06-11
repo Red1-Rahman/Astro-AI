@@ -41,16 +41,16 @@ try:
     from astropy.cosmology import FlatLambdaCDM, Planck18
     from astropy import units as u
     from astropy.coordinates import SkyCoord
+
     _HAVE_ASTROPY = True
 except ImportError:
     _HAVE_ASTROPY = False
     raise ImportError(
-        "astropy is required for CosmologyUtils. "
-        "Install it with: pip install astropy"
+        "astropy is required for CosmologyUtils. Install it with: pip install astropy"
     )
 
 # Speed of light — single source of truth
-_C_KMS = 299792.458   # km/s  (IAU 2012 definition)
+_C_KMS = 299792.458  # km/s  (IAU 2012 definition)
 
 
 class CosmologyUtils:
@@ -64,7 +64,7 @@ class CosmologyUtils:
 
     def __init__(
         self,
-        H0:  float = 67.66,
+        H0: float = 67.66,
         Om0: float = 0.3111,
         Ob0: float = 0.0490,
     ):
@@ -75,16 +75,14 @@ class CosmologyUtils:
         Om0 : matter density parameter     (Planck18 default)
         Ob0 : baryon density parameter     (Planck18 default)
         """
-        self.cosmo    = FlatLambdaCDM(H0=H0, Om0=Om0, Ob0=Ob0)
+        self.cosmo = FlatLambdaCDM(H0=H0, Om0=Om0, Ob0=Ob0)
         self.planck18 = Planck18
 
     # -----------------------------------------------------------------------
     # Time / distance
     # -----------------------------------------------------------------------
 
-    def redshift_to_age(
-        self, z: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def redshift_to_age(self, z: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """Age of the universe at redshift *z* [Gyr]."""
         return self.cosmo.age(z).value
 
@@ -120,7 +118,10 @@ class CosmologyUtils:
             logger.warning(
                 "age_to_redshift: age_gyr=%.3f Gyr is outside the range "
                 "[%.3f, %.3f] Gyr implied by z_range=%s. Returning nan.",
-                age_gyr, age_at_zmax, age_at_zmin, z_range,
+                age_gyr,
+                age_at_zmax,
+                age_at_zmin,
+                z_range,
             )
             return float("nan")
 
@@ -153,15 +154,11 @@ class CosmologyUtils:
         """Comoving distance D_C [Mpc]."""
         return self.cosmo.comoving_distance(z).value
 
-    def comoving_volume(
-        self, z: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def comoving_volume(self, z: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """Comoving volume out to redshift *z* [Gpc³]."""
         return self.cosmo.comoving_volume(z).value / 1e9
 
-    def lookback_time(
-        self, z: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def lookback_time(self, z: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """Lookback time to redshift *z* [Gyr]."""
         return self.cosmo.lookback_time(z).value
 
@@ -171,9 +168,7 @@ class CosmologyUtils:
         """Critical density ρ_c(z) [g cm⁻³]."""
         return self.cosmo.critical_density(z).to(u.g / u.cm**3).value
 
-    def hubble_parameter(
-        self, z: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def hubble_parameter(self, z: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """Hubble parameter H(z) [km/s/Mpc]."""
         return self.cosmo.H(z).value
 
@@ -190,10 +185,10 @@ class CosmologyUtils:
         float
             Angular scale [kpc/arcsec].
         """
-        d_A_mpc = self.angular_diameter_distance(z)   # Mpc
-        d_A_kpc = d_A_mpc * 1e3                        # kpc
+        d_A_mpc = self.angular_diameter_distance(z)  # Mpc
+        d_A_kpc = d_A_mpc * 1e3  # kpc
         arcsec_per_rad = 206265.0
-        return d_A_kpc / arcsec_per_rad                # kpc/arcsec
+        return d_A_kpc / arcsec_per_rad  # kpc/arcsec
 
     # -----------------------------------------------------------------------
     # Magnitude / flux conversions
@@ -205,7 +200,7 @@ class CosmologyUtils:
 
         m = M + 5·log10(D_L / 10 pc)
         """
-        d_L_pc = self.luminosity_distance(z) * 1e6    # Mpc → pc
+        d_L_pc = self.luminosity_distance(z) * 1e6  # Mpc → pc
         return M + 5.0 * np.log10(d_L_pc / 10.0)
 
     def apparent_to_absolute_magnitude(self, m: float, z: float) -> float:
@@ -231,7 +226,7 @@ class CosmologyUtils:
         float
             Luminosity [erg/s].
         """
-        d_L_cm = self.luminosity_distance(z) * 3.085677581e24   # Mpc → cm
+        d_L_cm = self.luminosity_distance(z) * 3.085677581e24  # Mpc → cm
         return flux * 4.0 * np.pi * d_L_cm**2
 
     def luminosity_to_flux(self, luminosity: float, z: float) -> float:
@@ -255,9 +250,7 @@ class CosmologyUtils:
     # Velocity / redshift conversions  (BUG FIX — relativistic formula)
     # -----------------------------------------------------------------------
 
-    def redshift_velocity(
-        self, z: float, relativistic: bool = True
-    ) -> float:
+    def redshift_velocity(self, z: float, relativistic: bool = True) -> float:
         """
         Convert redshift to recession velocity.
 
@@ -289,9 +282,7 @@ class CosmologyUtils:
         else:
             return z * _C_KMS
 
-    def velocity_to_redshift(
-        self, v: float, relativistic: bool = True
-    ) -> float:
+    def velocity_to_redshift(self, v: float, relativistic: bool = True) -> float:
         """
         Convert recession velocity to redshift.
 
@@ -311,9 +302,7 @@ class CosmologyUtils:
         if relativistic:
             beta = v / _C_KMS
             if abs(beta) >= 1.0:
-                raise ValueError(
-                    f"Velocity |v|={abs(v):.1f} km/s ≥ c — unphysical."
-                )
+                raise ValueError(f"Velocity |v|={abs(v):.1f} km/s ≥ c — unphysical.")
             return np.sqrt((1.0 + beta) / (1.0 - beta)) - 1.0
         else:
             return v / _C_KMS
@@ -322,9 +311,7 @@ class CosmologyUtils:
     # Scale factor
     # -----------------------------------------------------------------------
 
-    def scale_factor(
-        self, z: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def scale_factor(self, z: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """Scale factor a = 1/(1+z)."""
         return 1.0 / (1.0 + z)
 
@@ -341,22 +328,22 @@ class CosmologyUtils:
     def get_cosmology_params(self) -> dict:
         """Return the current cosmological parameters as a plain dict."""
         return {
-            "H0":    float(self.cosmo.H0.value),
-            "Om0":   float(self.cosmo.Om0),
-            "Ob0":   float(self.cosmo.Ob0),
-            "Ode0":  float(self.cosmo.Ode0),
+            "H0": float(self.cosmo.H0.value),
+            "Om0": float(self.cosmo.Om0),
+            "Ob0": float(self.cosmo.Ob0),
+            "Ode0": float(self.cosmo.Ode0),
             "Tcmb0": float(self.cosmo.Tcmb0.value),
-            "h":     float(self.cosmo.h),
+            "h": float(self.cosmo.h),
         }
 
     @staticmethod
     def planck18_params() -> dict:
         """Return Planck 2018 cosmological parameters as a plain dict."""
         return {
-            "H0":    float(Planck18.H0.value),
-            "Om0":   float(Planck18.Om0),
-            "Ob0":   float(Planck18.Ob0),
-            "Ode0":  float(Planck18.Ode0),
+            "H0": float(Planck18.H0.value),
+            "Om0": float(Planck18.Om0),
+            "Ob0": float(Planck18.Ob0),
+            "Ode0": float(Planck18.Ode0),
             "Tcmb0": float(Planck18.Tcmb0.value),
-            "h":     float(Planck18.h),
+            "h": float(Planck18.h),
         }

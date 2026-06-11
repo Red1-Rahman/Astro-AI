@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 # JSON encoder that handles numpy types
 # ---------------------------------------------------------------------------
 
+
 class _NumpyEncoder(json.JSONEncoder):
     """
     JSON encoder that converts numpy scalars and small arrays to Python
@@ -66,6 +67,7 @@ class _NumpyEncoder(json.JSONEncoder):
             return f"<array shape={obj.shape}>"
         try:
             import pandas as pd
+
             if isinstance(obj, pd.DataFrame):
                 return obj.to_dict(orient="list")
             if isinstance(obj, pd.Series):
@@ -78,6 +80,7 @@ class _NumpyEncoder(json.JSONEncoder):
 # ---------------------------------------------------------------------------
 # DataHandler
 # ---------------------------------------------------------------------------
+
 
 class DataHandler:
     """
@@ -144,8 +147,7 @@ class DataHandler:
             import h5py
         except ImportError:
             raise ImportError(
-                "h5py is required for HDF5 support. "
-                "Install it with: pip install h5py"
+                "h5py is required for HDF5 support. Install it with: pip install h5py"
             )
 
         filepath = self._safe_path(filename)
@@ -174,7 +176,8 @@ class DataHandler:
                     logger.warning(
                         "HDF5 save: skipping key '%s' — unsupported type %s. "
                         "Convert to ndarray or scalar before saving.",
-                        key, type(value).__name__,
+                        key,
+                        type(value).__name__,
                     )
 
         return filepath
@@ -197,8 +200,7 @@ class DataHandler:
             import h5py
         except ImportError:
             raise ImportError(
-                "h5py is required for HDF5 support. "
-                "Install it with: pip install h5py"
+                "h5py is required for HDF5 support. Install it with: pip install h5py"
             )
 
         filepath = self._safe_path(filename)
@@ -219,9 +221,7 @@ class DataHandler:
     # CSV
     # -----------------------------------------------------------------------
 
-    def save_csv(
-        self, data: Union[pd.DataFrame, Dict], filename: str
-    ) -> Path:
+    def save_csv(self, data: Union[pd.DataFrame, Dict], filename: str) -> Path:
         """
         Save data to CSV format.
 
@@ -408,9 +408,7 @@ class DataHandler:
     # -----------------------------------------------------------------------
 
     @staticmethod
-    def validate_data(
-        data: np.ndarray, expected_shape: Optional[tuple] = None
-    ) -> bool:
+    def validate_data(data: np.ndarray, expected_shape: Optional[tuple] = None) -> bool:
         """
         Validate a numpy array.
 
@@ -449,9 +447,7 @@ class DataHandler:
         return True
 
     @staticmethod
-    def clean_data(
-        data: np.ndarray, fill_value: float = 0.0
-    ) -> np.ndarray:
+    def clean_data(data: np.ndarray, fill_value: float = 0.0) -> np.ndarray:
         """
         Return a copy of *data* with NaN and ±inf replaced by *fill_value*.
 
