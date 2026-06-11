@@ -39,9 +39,11 @@ logger = logging.getLogger(__name__)
 
 try:
     from openai import OpenAI, AsyncOpenAI, APIError
+
     _NEW_OPENAI_SDK = True
 except Exception:
     import openai  # type: ignore
+
     _NEW_OPENAI_SDK = False
 
 try:
@@ -53,6 +55,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Serialisation helper
 # ---------------------------------------------------------------------------
+
 
 def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     """
@@ -73,8 +76,9 @@ def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     # numpy types — check before generic int/float because np.float64 IS a float
     try:
         import numpy as np
+
         if isinstance(obj, np.ndarray):
-            if obj.size > 100:          # don't embed large arrays in prompts
+            if obj.size > 100:  # don't embed large arrays in prompts
                 return f"<array shape={obj.shape}>"
             return obj.tolist()
         if isinstance(obj, (np.integer, np.floating, np.bool_)):
@@ -106,6 +110,7 @@ def _to_serializable(obj: Any, _depth: int = 0) -> Any:
     # pandas DataFrame
     try:
         import pandas as pd
+
         if isinstance(obj, pd.DataFrame):
             return f"<DataFrame rows={len(obj)} cols={list(obj.columns)}>"
     except ImportError:
@@ -214,6 +219,7 @@ class OpenAIAssistant:
                 self.client = OpenAI(**kwargs)
             else:
                 import openai as _openai  # type: ignore
+
                 _openai.api_key = self.api_key
                 if self.base_url:
                     _openai.api_base = self.base_url
@@ -288,7 +294,7 @@ class OpenAIAssistant:
             return self._chat(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=1500,
                 temperature=0.7,
@@ -358,7 +364,7 @@ class OpenAIAssistant:
             return self._chat(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=1500,
                 temperature=0.7,
@@ -380,7 +386,8 @@ class OpenAIAssistant:
             rag_context = ""
             if self.rag_system:
                 rag_context = self.rag_system.generate_context(
-                    "comparative analysis cross-module galaxy evolution", top_k=5)
+                    "comparative analysis cross-module galaxy evolution", top_k=5
+                )
 
             prompt = (
                 f"{rag_context}\n\n"
@@ -396,7 +403,7 @@ class OpenAIAssistant:
             return self._chat(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=2000,
                 temperature=0.7,
@@ -430,13 +437,14 @@ class OpenAIAssistant:
                 f"Findings:\n{_safe_json(data)}"
             ),
         }
-        prompt = prompts.get(section_type,
-                             f"Generate {section_type} content for:\n{_safe_json(data)}")
+        prompt = prompts.get(
+            section_type, f"Generate {section_type} content for:\n{_safe_json(data)}"
+        )
         try:
             return self._chat(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=1000,
                 temperature=0.7,
@@ -457,13 +465,14 @@ class OpenAIAssistant:
             content = self._chat(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=800,
                 temperature=0.8,
             )
             suggestions = [
-                s.strip() for s in content.split("\n")
+                s.strip()
+                for s in content.split("\n")
                 if s.strip() and (s.strip()[0].isdigit() or s.strip().startswith("-"))
             ]
             return suggestions[:8]
@@ -474,8 +483,9 @@ class OpenAIAssistant:
         if self.fallback_mode:
             return False
         try:
-            self._chat([{"role": "user", "content": "Ping"}],
-                       max_tokens=5, temperature=0.0)
+            self._chat(
+                [{"role": "user", "content": "Ping"}], max_tokens=5, temperature=0.0
+            )
             return True
         except Exception:
             return False
@@ -484,8 +494,11 @@ class OpenAIAssistant:
         if not self.rag_system:
             return {"enabled": False, "reason": "RAG system not available", "stats": {}}
         try:
-            return {"enabled": True, "reason": "RAG system operational",
-                    "stats": self.rag_system.get_stats()}
+            return {
+                "enabled": True,
+                "reason": "RAG system operational",
+                "stats": self.rag_system.get_stats(),
+            }
         except Exception as e:
             return {"enabled": False, "reason": f"RAG system error: {e}", "stats": {}}
 
@@ -495,8 +508,11 @@ class OpenAIAssistant:
         try:
             results = self.rag_system.retrieve(query, top_k)
             return [
-                {"content": doc["content"], "metadata": doc["metadata"],
-                 "similarity": score}
+                {
+                    "content": doc["content"],
+                    "metadata": doc["metadata"],
+                    "similarity": score,
+                }
                 for doc, score in results
             ]
         except Exception as e:
@@ -507,9 +523,7 @@ class OpenAIAssistant:
     # RAG storage — hardened against unhashable / non-serialisable input
     # -----------------------------------------------------------------------
 
-    def _store_analysis_results(
-        self, data_summary: Dict[str, Any], analysis_type: str
-    ):
+    def _store_analysis_results(self, data_summary: Dict[str, Any], analysis_type: str):
         """
         Store analysis results in the RAG knowledge base.
 
@@ -532,9 +546,7 @@ class OpenAIAssistant:
                     if v is not None and not str(v).startswith("<"):
                         parts.append(f"{k}: {v}")
             interpretation = (
-                "; ".join(parts)
-                if parts
-                else f"Analysis results for {analysis_type}"
+                "; ".join(parts) if parts else f"Analysis results for {analysis_type}"
             )
 
             source_map = {
@@ -545,7 +557,7 @@ class OpenAIAssistant:
 
             self.rag_system.add_scientific_result(
                 analysis_type=analysis_type,
-                results=safe_summary,          # guaranteed serialisable
+                results=safe_summary,  # guaranteed serialisable
                 interpretation=interpretation,
                 source_module=source_map.get(analysis_type, "unknown"),
             )
@@ -574,10 +586,14 @@ class OpenAIAssistant:
                         if m["role"] == "system" and instructions is None:
                             instructions = m["content"]
                         else:
-                            user_inputs.append({
-                                "role": m["role"],
-                                "content": [{"type": "input_text", "text": m["content"]}],
-                            })
+                            user_inputs.append(
+                                {
+                                    "role": m["role"],
+                                    "content": [
+                                        {"type": "input_text", "text": m["content"]}
+                                    ],
+                                }
+                            )
                     resp = self.client.responses.create(
                         model=self.model,
                         instructions=instructions,
@@ -643,17 +659,20 @@ class OpenAIAssistant:
 
     def _generate_fallback_report_section(self, section_type: str) -> str:
         return _FALLBACK_REPORT_SECTIONS.get(
-            section_type, _FALLBACK_REPORT_SECTIONS["introduction"])
+            section_type, _FALLBACK_REPORT_SECTIONS["introduction"]
+        )
 
     def _generate_fallback_template_analysis(self, template_name: str) -> str:
         return _FALLBACK_TEMPLATES.get(
             template_name,
-            f"**{template_name}** — enable AI integration for detailed analysis.")
+            f"**{template_name}** — enable AI integration for detailed analysis.",
+        )
 
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
 # ---------------------------------------------------------------------------
+
 
 def _secret_or_env(key: str) -> str:
     """Return value from Streamlit secrets or environment, or empty string."""
