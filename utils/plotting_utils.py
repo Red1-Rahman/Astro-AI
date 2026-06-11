@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 # seaborn is optional
 try:
     import seaborn as sns
+
     _HAVE_SNS = True
 except ImportError:
     _HAVE_SNS = False
@@ -88,10 +89,10 @@ class PlottingUtils:
 
         # Colour palettes — colormaps accessed via _get_cmap()
         self.color_palettes = {
-            "galaxy":      ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"],
-            "redshift":    _get_cmap("viridis"),
+            "galaxy": ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"],
+            "redshift": _get_cmap("viridis"),
             "temperature": _get_cmap("plasma"),
-            "mass":        _get_cmap("cividis"),
+            "mass": _get_cmap("cividis"),
         }
 
         if apply_globally:
@@ -109,15 +110,17 @@ class PlottingUtils:
         elif self.style == "dark":
             plt.style.use("dark_background")
         else:
-            plt.rcParams.update({
-                "figure.figsize":   (10, 6),
-                "font.size":        12,
-                "axes.labelsize":   14,
-                "axes.titlesize":   16,
-                "xtick.labelsize":  12,
-                "ytick.labelsize":  12,
-                "legend.fontsize":  12,
-            })
+            plt.rcParams.update(
+                {
+                    "figure.figsize": (10, 6),
+                    "font.size": 12,
+                    "axes.labelsize": 14,
+                    "axes.titlesize": 16,
+                    "xtick.labelsize": 12,
+                    "ytick.labelsize": 12,
+                    "legend.fontsize": 12,
+                }
+            )
 
     def _rc_context(self) -> dict:
         """
@@ -126,14 +129,19 @@ class PlottingUtils:
         This scopes style to individual figures without touching global state.
         """
         if self.style == "dark":
-            return {"axes.facecolor": "#1a1a1a", "figure.facecolor": "#1a1a1a",
-                    "text.color": "white", "axes.labelcolor": "white",
-                    "xtick.color": "white", "ytick.color": "white"}
+            return {
+                "axes.facecolor": "#1a1a1a",
+                "figure.facecolor": "#1a1a1a",
+                "text.color": "white",
+                "axes.labelcolor": "white",
+                "xtick.color": "white",
+                "ytick.color": "white",
+            }
         # default / seaborn — keep matplotlib defaults, just set sizes
         return {
-            "font.size":       12,
-            "axes.labelsize":  14,
-            "axes.titlesize":  16,
+            "font.size": 12,
+            "axes.labelsize": 14,
+            "axes.titlesize": 16,
             "xtick.labelsize": 12,
             "ytick.labelsize": 12,
             "legend.fontsize": 12,
@@ -366,8 +374,7 @@ class PlottingUtils:
         c2 = color2 or cycle[1]
 
         # Remove any color/c key from shared kwargs to avoid conflicts
-        safe_kwargs = {k: v for k, v in kwargs.items()
-                       if k not in ("color", "c")}
+        safe_kwargs = {k: v for k, v in kwargs.items() if k not in ("color", "c")}
 
         ax.plot(x, y1, color=c1, label=label1, **safe_kwargs)
         ax.plot(x, y2, color=c2, label=label2, **safe_kwargs)
@@ -399,6 +406,7 @@ class PlottingUtils:
         """
         try:
             import corner as _corner
+
             fig = _corner.corner(
                 samples,
                 labels=labels,
@@ -414,24 +422,32 @@ class PlottingUtils:
                 "Install with: pip install corner"
             )
             n_params = samples.shape[1] if samples.ndim == 2 else 1
-            fig, axes = plt.subplots(
-                1, n_params, figsize=(4 * n_params, 4)
-            )
+            fig, axes = plt.subplots(1, n_params, figsize=(4 * n_params, 4))
             if n_params == 1:
                 axes = [axes]
             for i, (ax, label) in enumerate(zip(axes, labels)):
-                ax.hist(samples[:, i], bins=30, color="steelblue",
-                        edgecolor="white", alpha=0.8)
+                ax.hist(
+                    samples[:, i],
+                    bins=30,
+                    color="steelblue",
+                    edgecolor="white",
+                    alpha=0.8,
+                )
                 ax.set_xlabel(label)
                 ax.set_ylabel("Count" if i == 0 else "")
                 # Mark median and 1σ credible interval
                 q16, q50, q84 = np.percentile(samples[:, i], [16, 50, 84])
-                ax.axvline(q50, color="tomato", lw=1.5,
-                           label=f"{q50:.2f}⁺{q84-q50:.2f}₋{q50-q16:.2f}")
+                ax.axvline(
+                    q50,
+                    color="tomato",
+                    lw=1.5,
+                    label=f"{q50:.2f}⁺{q84 - q50:.2f}₋{q50 - q16:.2f}",
+                )
                 ax.axvspan(q16, q84, alpha=0.15, color="tomato")
                 ax.legend(fontsize=8)
-            fig.suptitle(title + "\n(corner not installed — marginals only)",
-                         fontsize=11)
+            fig.suptitle(
+                title + "\n(corner not installed — marginals only)", fontsize=11
+            )
             fig.tight_layout()
             return fig
 
@@ -467,10 +483,10 @@ class PlottingUtils:
             xy=(peak_x, peak_y),
             xytext=(10, 10),
             textcoords="offset points",
-            bbox=dict(boxstyle="round,pad=0.4", fc="lightyellow",
-                      ec="darkorange", alpha=0.85),
-            arrowprops=dict(arrowstyle="->",
-                            connectionstyle="arc3,rad=0.15"),
+            bbox=dict(
+                boxstyle="round,pad=0.4", fc="lightyellow", ec="darkorange", alpha=0.85
+            ),
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.15"),
         )
 
     # -----------------------------------------------------------------------
@@ -492,9 +508,7 @@ class PlottingUtils:
     # -----------------------------------------------------------------------
 
     @staticmethod
-    def save_figure(
-        fig: plt.Figure, filename: str, dpi: int = 300, **kwargs
-    ):
+    def save_figure(fig: plt.Figure, filename: str, dpi: int = 300, **kwargs):
         """Save a figure at publication quality."""
         fig.tight_layout()
         fig.savefig(filename, dpi=dpi, bbox_inches="tight", **kwargs)
